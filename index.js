@@ -41,7 +41,7 @@ bot.start(async (ctx) => {
     `• Access 2–3 quality signals daily\n` +
     `• Join live trading sessions & Q&As\n\n` +
     `To access our signals, click /continue to complete the short steps.`,
-    mainMenu
+    // mainMenu
   );
 });
 
