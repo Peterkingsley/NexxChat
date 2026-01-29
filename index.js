@@ -7,7 +7,8 @@ const ADMIN_IDS = [123456789];
 const XT_LINK = "https://www.xtfarsi.site/pro/en/accounts/register?ref=1GRPPT";
 const COMMUNITY_LINK = "https://t.me/Nexxtrade_io";
 const COMMUNITY_USERNAME = "@Nexxtrade_io"; // Required for membership check
-const PERFORMANCE_LINK = "https://your-performance-page.com";
+const PERFORMANCE_LINK = "https://www.nexxtrade.io/performance";
+const PAYMENT_BOT_USERNAME = "NexxTrade_bot"; // The bot handling payments
 
 const bot = new Telegraf(BOT_TOKEN);
 
@@ -30,18 +31,15 @@ bot.start(async (ctx) => {
   users.add(ctx.from.id);
 
   await ctx.reply(
-    `Hey ${name}, welcome to NexxTrade 👋
-
-You are about to gain access to the best crypto signal network.
-
-We help traders to:
-• Catch high-probability setups
-• Size positions correctly
-• Trade with structure
-• Access 2–3 quality signals daily
-• Join live trading sessions & Q&As
-
-To access our signals, click /continue to complete the short steps.`,
+    `Hey ${name}, welcome to NexxTrade 👋\n\n` +
+    `You are about to gain access to the best crypto signal network.\n\n` +
+    `We help traders to:\n` +
+    `• Catch high-probability setups\n` +
+    `• Size positions correctly\n` +
+    `• Trade with structure\n` +
+    `• Access 2–3 quality signals daily\n` +
+    `• Join live trading sessions & Q&As\n\n` +
+    `To access our signals, click /continue to complete the short steps.`,
     mainMenu
   );
 });
@@ -50,11 +48,10 @@ To access our signals, click /continue to complete the short steps.`,
 
 bot.command("continue", async (ctx) => {
   await ctx.reply(
-    `How To Get Free Signals 👇
-
-1️⃣ Register on XT Exchange  
-2️⃣ Submit your UID  
-3️⃣ Join our community`,
+    `How To Get Free Signals 👇\n\n` +
+    `1️⃣ Register on XT Exchange\n` +
+    `2️⃣ Submit your UID\n` +
+    `3️⃣ Join our community`,
     Markup.inlineKeyboard([
       [Markup.button.url("🔗 Register on XT", XT_LINK)],
       [Markup.button.callback("✅ I’ve Registered", "REGISTERED")]
@@ -106,13 +103,11 @@ bot.action("JOINED", async (ctx) => {
   await ctx.answerCbQuery();
   const userId = ctx.from.id;
 
-  // 1. Check if they even gave a UID yet
   if (!userUids.has(userId)) {
     return ctx.reply("Please submit your XT UID first by clicking /continue.");
   }
 
   try {
-    // 2. Real-time Telegram Membership Check
     const member = await ctx.telegram.getChatMember(COMMUNITY_USERNAME, userId);
     const isValid = ["member", "administrator", "creator"].includes(member.status);
 
@@ -152,32 +147,17 @@ bot.action("PERFORMANCE", async (ctx) => {
 
 async function sendPerformance(ctx) {
   await ctx.reply(
-    `Transparency matters.
-
-NexxTrade publishes real performance:
-• Entry prices
-• Take profits
-• Stop losses
-• Win/Loss history
-
-Click below to view verified results.`,
+    `Transparency matters.\n\n` +
+    `NexxTrade publishes real performance:\n` +
+    `• Entry prices\n` +
+    `• Take profits\n` +
+    `• Stop losses\n` +
+    `• Win/Loss history\n\n` +
+    `Click below to view verified results.`,
     Markup.inlineKeyboard([
       [Markup.button.url("📈 View Performance Dashboard", PERFORMANCE_LINK)]
     ])
   );
-
-  setTimeout(async () => {
-    try {
-      await ctx.telegram.sendMessage(
-        ctx.chat.id,
-        `Have you checked our performance yet?`,
-        Markup.inlineKeyboard([
-          [Markup.button.url("📊 View Performance", PERFORMANCE_LINK)],
-          [Markup.button.callback("💳 Subscribe", "SUBSCRIBE")]
-        ])
-      );
-    } catch (e) {}
-  }, 10 * 60 * 1000);
 }
 
 /* ================= SUBSCRIBE ================= */
@@ -202,17 +182,25 @@ async function showPlans(ctx) {
   );
 }
 
-/* ================= PLAN DETAILS ================= */
+/* ================= PLAN DETAILS & REDIRECT ================= */
 
 bot.action(/PLAN_/, async (ctx) => {
   await ctx.answerCbQuery();
   const plan = ctx.callbackQuery.data.replace("PLAN_", "");
+  
+  // Format the name for the button and payload
+  const planName = plan.toLowerCase();
 
   await ctx.reply(
-    `🟢 ${plan} Signal Plan\n\nPrice: $XX`,
+    `⭐ ${plan} Signal Plan\n\n` +
+    `To complete your subscription and secure your spot, please proceed to our specialized payment bot.`,
     Markup.inlineKeyboard([
-      [Markup.button.url("💳 Pay with Crypto", "https://your-crypto-pay.com")],
-      [Markup.button.url("💳 Pay with FIAT", "https://your-fiat-pay.com")],
+      [
+        Markup.button.url(
+          "💳 Pay via @NexxTrade_bot", 
+          `https://t.me/${PAYMENT_BOT_USERNAME}?start=pay_${planName}`
+        )
+      ],
       [Markup.button.callback("🔙 Back to Plans", "SUBSCRIBE")]
     ])
   );
