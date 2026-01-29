@@ -197,7 +197,7 @@ bot.action(/PLAN_/, async (ctx) => {
     Markup.inlineKeyboard([
       [
         Markup.button.url(
-          "💳 Pay via @NexxTrade_bot", 
+          "💳 Pay Now", 
           `https://t.me/${PAYMENT_BOT_USERNAME}?start=pay_${planName}`
         )
       ],
