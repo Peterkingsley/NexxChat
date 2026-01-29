@@ -20,10 +20,10 @@ const adminBroadcasting = new Set(); // Tracks admins in broadcast mode
 
 /* ================= MENU ================= */
 
-const mainMenu = Markup.keyboard([
-  ["/start", "/performance"],
-  ["/subscribe", "/support"]
-]).resize();
+// const mainMenu = Markup.keyboard([
+//   ["/start", "/performance"],
+//   ["/subscribe", "/support"]
+// ]).resize();
 
 /* ================= START ================= */
 
