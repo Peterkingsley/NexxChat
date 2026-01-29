@@ -67,7 +67,7 @@ bot.action("REGISTERED", async (ctx) => {
   awaitingUid.add(ctx.from.id);
 
   await ctx.reply(
-    `✅ Great! Now, please **type and send your XT UID** (e.g., 12345678) below.\n\n` +
+    `✅ Great! Now, please type and send your XT UID.\n\n` +
     `You can find this in your XT Account Profile settings.`
   );
 });
