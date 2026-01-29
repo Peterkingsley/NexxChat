@@ -2,13 +2,13 @@ const { Telegraf, Markup } = require("telegraf");
 require('dotenv').config();
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const ADMIN_IDS = [123456789];
+const ADMIN_IDS = [6549008139];
 
 const XT_LINK = "https://www.xtfarsi.site/pro/en/accounts/register?ref=1GRPPT";
 const COMMUNITY_LINK = "https://t.me/Nexxtrade_io";
-const COMMUNITY_USERNAME = "@Nexxtrade_io"; // Required for membership check
+const COMMUNITY_USERNAME = "@Nexxtrade_io";
 const PERFORMANCE_LINK = "https://www.nexxtrade.io/performance";
-const PAYMENT_BOT_USERNAME = "NexxTrade_bot"; // The bot handling payments
+const PAYMENT_BOT_USERNAME = "NexxTrade_bot";
 
 const bot = new Telegraf(BOT_TOKEN);
 
@@ -16,6 +16,7 @@ const bot = new Telegraf(BOT_TOKEN);
 const users = new Set();
 const awaitingUid = new Set(); 
 const userUids = new Map();    
+const adminBroadcasting = new Set(); // Tracks admins in broadcast mode
 
 /* ================= MENU ================= */
 
@@ -71,33 +72,7 @@ bot.action("REGISTERED", async (ctx) => {
   );
 });
 
-/* ================= TEXT LISTENER (UID CAPTURE) ================= */
-
-bot.on("text", async (ctx, next) => {
-  const userId = ctx.from.id;
-
-  if (!awaitingUid.has(userId)) return next();
-
-  const uidInput = ctx.message.text.trim();
-
-  if (!/^\d+$/.test(uidInput) || uidInput.length < 5) {
-    return ctx.reply("❌ That doesn't look like a valid UID. Please send your numeric XT UID.");
-  }
-
-  userUids.set(userId, uidInput);
-  awaitingUid.delete(userId);
-
-  await ctx.reply(
-    `✅ UID ${uidInput} received.\n\n` +
-    `Final step: join the NexxTrade community to activate your signals.`,
-    Markup.inlineKeyboard([
-      [Markup.button.url("🚀 Join NexxTrade Community", COMMUNITY_LINK)],
-      [Markup.button.callback("✅ I’ve Joined", "JOINED")]
-    ])
-  );
-});
-
-/* ================= JOINED (WITH ACTIVE VERIFICATION) ================= */
+/* ================= JOINED (VERIFICATION) ================= */
 
 bot.action("JOINED", async (ctx) => {
   await ctx.answerCbQuery();
@@ -182,25 +157,16 @@ async function showPlans(ctx) {
   );
 }
 
-/* ================= PLAN DETAILS & REDIRECT ================= */
-
 bot.action(/PLAN_/, async (ctx) => {
   await ctx.answerCbQuery();
   const plan = ctx.callbackQuery.data.replace("PLAN_", "");
-  
-  // Format the name for the button and payload
   const planName = plan.toLowerCase();
 
   await ctx.reply(
     `⭐ ${plan} Signal Plan\n\n` +
     `To complete your subscription and secure your spot, please proceed to our specialized payment bot.`,
     Markup.inlineKeyboard([
-      [
-        Markup.button.url(
-          "💳 Pay Now", 
-          `https://t.me/${PAYMENT_BOT_USERNAME}?start=pay_${planName}`
-        )
-      ],
+      [Markup.button.url("💳 Pay Now", `https://t.me/${PAYMENT_BOT_USERNAME}?start=pay_${planName}`)],
       [Markup.button.callback("🔙 Back to Plans", "SUBSCRIBE")]
     ])
   );
@@ -212,20 +178,81 @@ bot.command("support", async (ctx) => {
   await ctx.reply("Need help?\n\nContact support: @NexxTradeSupport");
 });
 
-/* ================= MASS MESSAGE (ADMIN) ================= */
+/* ================= ENHANCED BROADCAST (ADMIN) ================= */
 
 bot.command("mass", async (ctx) => {
   if (!ADMIN_IDS.includes(ctx.from.id)) return;
+  
+  adminBroadcasting.add(ctx.from.id);
+  await ctx.reply(
+    "📢 **Broadcast Mode Active**\n\n" +
+    "Send me a **Photo (with caption)** or a **Text Message** to broadcast to all users.\n\n" +
+    "• You can use HTML for links: <a href='https://example.com'>Text</a>\n" +
+    "• Type /cancel to exit mode.",
+    { parse_mode: "Markdown" }
+  );
+});
 
-  const message = ctx.message.text.replace("/mass", "").trim();
-  if (!message) return ctx.reply("Usage: /mass your message");
-
-  for (const userId of users) {
-    try {
-      await ctx.telegram.sendMessage(userId, message);
-    } catch (e) {}
+bot.command("cancel", (ctx) => {
+  if (adminBroadcasting.has(ctx.from.id)) {
+    adminBroadcasting.delete(ctx.from.id);
+    ctx.reply("❌ Broadcast mode deactivated.");
   }
-  ctx.reply("✅ Mass message sent.");
+});
+
+/* ================= UNIVERSAL TEXT/PHOTO LISTENER ================= */
+
+bot.on(["photo", "text"], async (ctx, next) => {
+  const userId = ctx.from.id;
+
+  // 1. Handle UID submission
+  if (awaitingUid.has(userId) && ctx.message.text) {
+    const uidInput = ctx.message.text.trim();
+    if (!/^\d+$/.test(uidInput) || uidInput.length < 5) {
+      return ctx.reply("❌ That doesn't look like a valid UID. Please send your numeric XT UID.");
+    }
+    userUids.set(userId, uidInput);
+    awaitingUid.delete(userId);
+    return ctx.reply(
+      `✅ UID ${uidInput} received.\n\nFinal step: join the community.`,
+      Markup.inlineKeyboard([
+        [Markup.button.url("🚀 Join NexxTrade Community", COMMUNITY_LINK)],
+        [Markup.button.callback("✅ I’ve Joined", "JOINED")]
+      ])
+    );
+  }
+
+  // 2. Handle Admin Broadcast
+  if (adminBroadcasting.has(userId) && ADMIN_IDS.includes(userId)) {
+    const broadcastMsg = ctx.message.text || ctx.message.caption || "";
+    const photo = ctx.message.photo ? ctx.message.photo[ctx.message.photo.length - 1].file_id : null;
+
+    let count = 0;
+    await ctx.reply(`🚀 Sending to ${users.size} users...`);
+
+    for (const targetId of users) {
+      try {
+        if (photo) {
+          await ctx.telegram.sendPhoto(targetId, photo, {
+            caption: broadcastMsg,
+            parse_mode: "HTML"
+          });
+        } else {
+          await ctx.telegram.sendMessage(targetId, broadcastMsg, {
+            parse_mode: "HTML"
+          });
+        }
+        count++;
+      } catch (e) {
+        console.error(`Could not send to ${targetId}`);
+      }
+    }
+    
+    adminBroadcasting.delete(userId);
+    return ctx.reply(`✅ Broadcast complete! Sent to ${count} users.`);
+  }
+
+  return next();
 });
 
 /* ================= LAUNCH ================= */
