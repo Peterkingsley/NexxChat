@@ -2,7 +2,7 @@ const { Telegraf, Markup } = require("telegraf");
 require('dotenv').config();
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const ADMIN_IDS = [6549008139];
+const ADMIN_IDS = [1388617888];
 
 const XT_LINK = "https://www.xtfarsi.site/pro/en/accounts/register?ref=1GRPPT";
 const COMMUNITY_LINK = "https://t.me/Nexxtrade_io";
