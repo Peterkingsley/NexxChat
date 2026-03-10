@@ -9,21 +9,15 @@ const COMMUNITY_LINK = "https://t.me/Nexxtrade_io";
 const COMMUNITY_USERNAME = "@Nexxtrade_io";
 const PERFORMANCE_LINK = "https://www.nexxtrade.io/performance";
 const PAYMENT_BOT_USERNAME = "NexxTrade_bot";
+const X_LINK = "https://x.com/NexxTrade_io";
 
 const bot = new Telegraf(BOT_TOKEN);
 
 // Simple in-memory stores
 const users = new Set();
-const awaitingUid = new Set(); 
-const userUids = new Map();    
+const awaitingUid = new Set();
+const userUids = new Map();
 const adminBroadcasting = new Set(); // Tracks admins in broadcast mode
-
-/* ================= MENU ================= */
-
-// const mainMenu = Markup.keyboard([
-//   ["/start", "/performance"],
-//   ["/subscribe", "/support"]
-// ]).resize();
 
 /* ================= START ================= */
 
@@ -40,8 +34,7 @@ bot.start(async (ctx) => {
     `• Trade with structure\n` +
     `• Access 2–3 quality signals daily\n` +
     `• Join live trading sessions & Q&As\n\n` +
-    `To access our signals, click /continue to complete the short steps.`,
-    // mainMenu
+    `To access our signals, click /continue to complete the short steps.`
   );
 });
 
@@ -52,11 +45,16 @@ bot.command("continue", async (ctx) => {
     `How to get Our Signals 👇\n\n` +
     `1️⃣ Register on XT Exchang\n` +
     `2️⃣ Submit your UID\n` +
+<<<<<<< HEAD
     `3️⃣ Follow NexxTrade on Twitter\n` +
     `4️⃣ Join our community`,
+=======
+    `3️⃣ Follow us on X (Twitter)\n` +
+    `4️⃣ Join our Telegram community`,
+>>>>>>> 84f0155cfbdaffa37004bb0de721d38e28029fbd
     Markup.inlineKeyboard([
       [Markup.button.url("🔗 Register on XT", XT_LINK)],
-      [Markup.button.callback("✅ I’ve Registered", "REGISTERED")]
+      [Markup.button.callback("✅ I've Registered", "REGISTERED")]
     ])
   );
 });
@@ -70,6 +68,34 @@ bot.action("REGISTERED", async (ctx) => {
   await ctx.reply(
     `✅ Great! Now, please type and send your XT UID.\n\n` +
     `You can find this in your XT Account Profile settings.`
+  );
+});
+
+/* ================= FOLLOW ON X ================= */
+
+bot.action("FOLLOW_X", async (ctx) => {
+  await ctx.answerCbQuery();
+
+  await ctx.reply(
+    `3️⃣ Follow us on X (Twitter) to stay updated with market insights, trade ideas & announcements.\n\n` +
+    `👇 Click below to follow, then confirm.`,
+    Markup.inlineKeyboard([
+      [Markup.button.url("🐦 Follow @NexxTrade_io on X", X_LINK)],
+      [Markup.button.callback("✅ I've Followed", "FOLLOWED_X")]
+    ])
+  );
+});
+
+bot.action("FOLLOWED_X", async (ctx) => {
+  await ctx.answerCbQuery();
+
+  await ctx.reply(
+    `🙌 Thanks for following us on X!\n\n` +
+    `Last step: join our Telegram community to get access to live signals.`,
+    Markup.inlineKeyboard([
+      [Markup.button.url("🚀 Join NexxTrade Community", COMMUNITY_LINK)],
+      [Markup.button.callback("✅ I've Joined", "JOINED")]
+    ])
   );
 });
 
@@ -89,7 +115,7 @@ bot.action("JOINED", async (ctx) => {
 
     if (isValid) {
       await ctx.reply(
-        `✅ Membership verified! You’re now part of the NexxTrade ecosystem.`,
+        `✅ Membership verified! You're now part of the NexxTrade ecosystem.`,
         Markup.inlineKeyboard([
           [Markup.button.callback("📊 View Performance", "PERFORMANCE")],
           [Markup.button.callback("💳 Subscribe to Signals", "SUBSCRIBE")]
@@ -100,7 +126,7 @@ bot.action("JOINED", async (ctx) => {
         "❌ Verification failed. You haven't joined the group yet.",
         Markup.inlineKeyboard([
           [Markup.button.url("🚀 Join NexxTrade Community", COMMUNITY_LINK)],
-          [Markup.button.callback("✅ I’ve Joined", "JOINED")]
+          [Markup.button.callback("✅ I've Joined", "JOINED")]
         ])
       );
     }
@@ -183,7 +209,7 @@ bot.command("support", async (ctx) => {
 
 bot.command("mass", async (ctx) => {
   if (!ADMIN_IDS.includes(ctx.from.id)) return;
-  
+
   adminBroadcasting.add(ctx.from.id);
   await ctx.reply(
     "📢 **Broadcast Mode Active**\n\n" +
@@ -215,10 +241,10 @@ bot.on(["photo", "text"], async (ctx, next) => {
     userUids.set(userId, uidInput);
     awaitingUid.delete(userId);
     return ctx.reply(
-      `✅ UID ${uidInput} received.\n\nFinal step: join the community.`,
+      `✅ UID ${uidInput} received.\n\nNext step: follow us on X to stay in the loop 👇`,
       Markup.inlineKeyboard([
-        [Markup.button.url("🚀 Join NexxTrade Community", COMMUNITY_LINK)],
-        [Markup.button.callback("✅ I’ve Joined", "JOINED")]
+        [Markup.button.url("🐦 Follow @NexxTrade_io on X", X_LINK)],
+        [Markup.button.callback("✅ I've Followed", "FOLLOWED_X")]
       ])
     );
   }
@@ -248,7 +274,7 @@ bot.on(["photo", "text"], async (ctx, next) => {
         console.error(`Could not send to ${targetId}`);
       }
     }
-    
+
     adminBroadcasting.delete(userId);
     return ctx.reply(`✅ Broadcast complete! Sent to ${count} users.`);
   }
