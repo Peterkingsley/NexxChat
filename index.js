@@ -33,8 +33,8 @@ bot.start(async (ctx) => {
 
   await ctx.reply(
     `Hey ${name}, welcome to NexxTrade 👋\n\n` +
-    `You are about to gain access to the best crypto signal network.\n\n` +
-    `We help traders to:\n` +
+    `You Are About to Gain Access to The Best Crypto Research & Signal Network..\n\n` +
+    `We Help Traders to:\n` +
     `• Catch high-probability setups\n` +
     `• Size positions correctly\n` +
     `• Trade with structure\n` +
@@ -49,10 +49,11 @@ bot.start(async (ctx) => {
 
 bot.command("continue", async (ctx) => {
   await ctx.reply(
-    `How To Get Free Signals 👇\n\n` +
-    `1️⃣ Register on XT Exchange\n` +
+    `How to get Our Signals 👇\n\n` +
+    `1️⃣ Register on XT Exchang\n` +
     `2️⃣ Submit your UID\n` +
-    `3️⃣ Join our community`,
+    `3️⃣ Follow NexxTrade on Twitter\n` +
+    `4️⃣ Join our community`,
     Markup.inlineKeyboard([
       [Markup.button.url("🔗 Register on XT", XT_LINK)],
       [Markup.button.callback("✅ I’ve Registered", "REGISTERED")]
@@ -150,9 +151,9 @@ async function showPlans(ctx) {
   await ctx.reply(
     `NexxTrade offers multiple signal plans depending on your trading style.`,
     Markup.inlineKeyboard([
-      [Markup.button.callback("🟢 Monthly Plan", "PLAN_MONTHLY")],
-      [Markup.button.callback("🔵 Quarterly Plan", "PLAN_QUARTERLY")],
-      [Markup.button.callback("🟣 6-Month Elite Plan", "PLAN_ELITE")]
+      [Markup.button.callback("🟢 Monthly Access || Basic", "PLAN_MONTHLY")],
+      [Markup.button.callback("🔵 Quarterly Access || Pro", "PLAN_QUARTERLY")],
+      [Markup.button.callback("🟣 6-Month Access || Elite", "PLAN_ELITE")]
     ])
   );
 }
