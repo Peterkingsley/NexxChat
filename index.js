@@ -17,7 +17,6 @@ const bot = new Telegraf(BOT_TOKEN);
 const users = new Set();
 const awaitingUid = new Set();
 const userUids = new Map();
-const userPlans = new Map(); // Tracks selected plan per user
 const adminBroadcasting = new Set();
 
 /* ================= START ================= */
@@ -217,46 +216,16 @@ async function showPlans(ctx) {
   );
 }
 
-/* ================= PLAN CONFIRMATION (Bot Switch Message) ================= */
+/* ================= PLAN SELECTION — direct to payment bot ================= */
 
 bot.action(/^PLAN_(MONTHLY|QUARTERLY|ELITE)$/, async (ctx) => {
   await ctx.answerCbQuery();
-  const planKey = ctx.callbackQuery.data.replace("PLAN_", "");
-  const userId = ctx.from.id;
-  const username = ctx.from.username ? `@${ctx.from.username}` : ctx.from.first_name;
+  const planKey = ctx.callbackQuery.data.replace("PLAN_", "").toLowerCase();
 
-  const planLabels = {
-    MONTHLY: "Monthly Access || Basic",
-    QUARTERLY: "3 Month Access || Pro",
-    ELITE: "6 Month Access || Elite"
-  };
-
-  const planName = planLabels[planKey] || planKey;
-  userPlans.set(userId, planKey.toLowerCase());
-
-  // Step 1: Long welcome/pitch message
   await ctx.reply(
-    `Hey ${ctx.from.first_name}, welcome to NexxTrade 👋\n\n` +
-    `You Are About to Gain Access to The Best Crypto Research & Signal Network.\n\n` +
-    `We Help Traders to:\n` +
-    `📊 Catch High-probability Set-ups\n` +
-    `🧠 Size positions correctly\n` +
-    `📈 Trade with structure\n` +
-    `💰 Access 2–3 quality signals daily\n` +
-    `📚 Join live trading sessions & Q&As`
-  );
-
-  // Step 2: Short personalised confirmation message
-  await ctx.reply(
-    `Welcome ${username}! You're about to secure access to NexxTrade ${planName} Circle\n\n` +
-    `Just a few clicks left\n` +
-    `📊 Get 2-3 signals daily\n` +
-    `🔬 Expert Analysis\n` +
-    `📈 High-probability setups only\n\n` +
-    `Confirm your plan to proceed 👇`,
+    `Redirecting you to the payment bot... 💳`,
     Markup.inlineKeyboard([
-      [Markup.button.url("✅ Confirm Your Plan", `https://t.me/${PAYMENT_BOT_USERNAME}?start=pay_${planKey.toLowerCase()}`)],
-      [Markup.button.callback("📊 View Performance", "PERFORMANCE")]
+      [Markup.button.url("💳 Complete Payment", `https://t.me/${PAYMENT_BOT_USERNAME}?start=pay_${planKey}`)]
     ])
   );
 });
