@@ -134,19 +134,23 @@ bot.action("WHY_XT", async (ctx) => {
   await ctx.answerCbQuery();
 
   await ctx.reply(
-    `Why XT? 🏦\n\n` +
+    `Why We Choose XT? 🚀\n\n` +
     `• XT puts its users first\n` +
     `• No failed Limit orders\n` +
     `• No failed SLs\n` +
-    `• No failed TPs\n` +
+    `• No failed TPs\n\n` +
     `• Deep liquidity\n` +
     `• Fast execution\n` +
-    `• Wide futures pairs\n` +
-    `• Proper Risk management tools`,
-    Markup.inlineKeyboard([
-      [Markup.button.url("🔗 Register on XT", XT_LINK)],
-      [Markup.button.callback("✅ I've Registered", "REGISTERED")]
-    ])
+    `• Proper Risk management tools\n\n` +
+    `All our Signals are XT-integrated.\n\n` +
+    `Register on XT: <a href="${XT_LINK}">${XT_LINK}</a>`,
+    {
+      parse_mode: "HTML",
+      ...Markup.inlineKeyboard([
+        [Markup.button.url("🔗 Register on XT", XT_LINK)],
+        [Markup.button.callback("✅ I've Registered", "REGISTERED")]
+      ])
+    }
   );
 });
 
