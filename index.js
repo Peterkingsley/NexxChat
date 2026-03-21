@@ -1,7 +1,9 @@
 const { Telegraf, Markup } = require("telegraf");
+const { Pool } = require("pg");
 require('dotenv').config();
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
+const DATABASE_URL = process.env.DATABASE_URL; // Render provides this automatically
 const ADMIN_IDS = [1388617888];
 
 const XT_LINK = "https://www.xtfarsi.site/en/activity/andy1117?ref=1GRPPT";
@@ -13,17 +15,76 @@ const X_LINK = "https://x.com/NexxTrade_io";
 
 const bot = new Telegraf(BOT_TOKEN);
 
-// Simple in-memory stores
-const users = new Set();
+// In-memory state (session tracking only — not persisted)
 const awaitingUid = new Set();
 const userUids = new Map();
 const adminBroadcasting = new Set();
+
+/* ================= DATABASE ================= */
+
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl: { rejectUnauthorized: false } // required for Render PostgreSQL
+});
+
+async function initDB() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      user_id       BIGINT PRIMARY KEY,
+      chat_id       BIGINT NOT NULL,
+      first_name    TEXT,
+      last_name     TEXT,
+      username      TEXT,
+      language_code TEXT,
+      is_bot        BOOLEAN DEFAULT FALSE,
+      is_premium    BOOLEAN DEFAULT FALSE,
+      xt_uid        TEXT,
+      joined_at     TIMESTAMPTZ DEFAULT NOW(),
+      last_seen     TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  console.log("✅ Database table ready");
+}
+
+// Upsert user — inserts on first visit, updates fields on return visits
+async function saveUser(from, chatId) {
+  await pool.query(
+    `INSERT INTO users (user_id, chat_id, first_name, last_name, username, language_code, is_bot, is_premium, last_seen)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+     ON CONFLICT (user_id) DO UPDATE SET
+       chat_id       = EXCLUDED.chat_id,
+       first_name    = EXCLUDED.first_name,
+       last_name     = EXCLUDED.last_name,
+       username      = EXCLUDED.username,
+       language_code = EXCLUDED.language_code,
+       is_bot        = EXCLUDED.is_bot,
+       is_premium    = EXCLUDED.is_premium,
+       last_seen     = NOW()`,
+    [
+      from.id,
+      chatId,
+      from.first_name || null,
+      from.last_name || null,
+      from.username || null,
+      from.language_code || null,
+      from.is_bot || false,
+      from.is_premium || false
+    ]
+  );
+}
+
+// Fetch all chat_ids from DB for broadcasting
+async function getAllChatIds() {
+  const result = await pool.query("SELECT chat_id FROM users");
+  return result.rows.map(r => r.chat_id);
+}
 
 /* ================= START ================= */
 
 bot.start(async (ctx) => {
   const name = ctx.from.first_name;
-  users.add(ctx.from.id);
+
+  await saveUser(ctx.from, ctx.chat.id);
 
   await ctx.reply(
     `Hey ${name}, welcome to NexxTrade 👋\n\n` +
@@ -44,11 +105,13 @@ bot.start(async (ctx) => {
 /* ================= CONTINUE ================= */
 
 bot.command("continue", async (ctx) => {
+  await saveUser(ctx.from, ctx.chat.id);
   await sendContinue(ctx);
 });
 
 bot.action("CONTINUE", async (ctx) => {
   await ctx.answerCbQuery();
+  await saveUser(ctx.from, ctx.chat.id);
   await sendContinue(ctx);
 });
 
@@ -65,7 +128,7 @@ async function sendContinue(ctx) {
   );
 }
 
-/* ================= WHY XT (triggered by Register on XT button) ================= */
+/* ================= WHY XT ================= */
 
 bot.action("WHY_XT", async (ctx) => {
   await ctx.answerCbQuery();
@@ -236,17 +299,30 @@ bot.command("support", async (ctx) => {
   await ctx.reply("Need help?\n\nContact support: @NexxTradeSupport");
 });
 
+/* ================= ADMIN: USER COUNT ================= */
+
+bot.command("users", async (ctx) => {
+  if (!ADMIN_IDS.includes(ctx.from.id)) return;
+  const result = await pool.query("SELECT COUNT(*) FROM users");
+  const count = result.rows[0].count;
+  await ctx.reply(`👥 Total users in database: ${count}`);
+});
+
 /* ================= BROADCAST (ADMIN) ================= */
 
 bot.command("mass", async (ctx) => {
   if (!ADMIN_IDS.includes(ctx.from.id)) return;
 
   adminBroadcasting.add(ctx.from.id);
+  const result = await pool.query("SELECT COUNT(*) FROM users");
+  const count = result.rows[0].count;
+
   await ctx.reply(
-    "📢 <b>Broadcast Mode Active</b>\n\n" +
-    "Send me a <b>Photo (with caption)</b> or a <b>Text Message</b> to broadcast to all users.\n\n" +
-    "• You can use HTML for links: &lt;a href='https://example.com'&gt;Text&lt;/a&gt;\n" +
-    "• Type /cancel to exit mode.",
+    `📢 <b>Broadcast Mode Active</b>\n\n` +
+    `You have <b>${count} users</b> in the database.\n\n` +
+    `Send me a <b>Photo (with caption)</b> or a <b>Text Message</b> to broadcast to all of them.\n\n` +
+    `• You can use HTML for links: &lt;a href='https://example.com'&gt;Text&lt;/a&gt;\n` +
+    `• Type /cancel to exit mode.`,
     { parse_mode: "HTML" }
   );
 });
@@ -271,6 +347,13 @@ bot.on(["photo", "text"], async (ctx, next) => {
     }
     userUids.set(userId, uidInput);
     awaitingUid.delete(userId);
+
+    // Persist XT UID to PostgreSQL
+    await pool.query(
+      "UPDATE users SET xt_uid = $1 WHERE user_id = $2",
+      [uidInput, userId]
+    );
+
     return ctx.reply(
       `✅ UID ${uidInput} received.\n\nNext step: follow us on X to stay in the loop 👇`,
       Markup.inlineKeyboard([
@@ -280,34 +363,42 @@ bot.on(["photo", "text"], async (ctx, next) => {
     );
   }
 
-  // 2. Handle Admin Broadcast
+  // 2. Handle Admin Broadcast — reads all chat_ids from PostgreSQL
   if (adminBroadcasting.has(userId) && ADMIN_IDS.includes(userId)) {
     const broadcastMsg = ctx.message.text || ctx.message.caption || "";
     const photo = ctx.message.photo ? ctx.message.photo[ctx.message.photo.length - 1].file_id : null;
 
+    const chatIds = await getAllChatIds();
     let count = 0;
-    await ctx.reply(`🚀 Sending to ${users.size} users...`);
+    let failed = 0;
 
-    for (const targetId of users) {
+    await ctx.reply(`🚀 Broadcasting to ${chatIds.length} users...`);
+
+    for (const chatId of chatIds) {
       try {
         if (photo) {
-          await ctx.telegram.sendPhoto(targetId, photo, {
+          await ctx.telegram.sendPhoto(chatId, photo, {
             caption: broadcastMsg,
             parse_mode: "HTML"
           });
         } else {
-          await ctx.telegram.sendMessage(targetId, broadcastMsg, {
+          await ctx.telegram.sendMessage(chatId, broadcastMsg, {
             parse_mode: "HTML"
           });
         }
         count++;
       } catch (e) {
-        console.error(`Could not send to ${targetId}`);
+        failed++;
+        console.error(`Could not send to chat_id ${chatId}:`, e.message);
       }
     }
 
     adminBroadcasting.delete(userId);
-    return ctx.reply(`✅ Broadcast complete! Sent to ${count} users.`);
+    return ctx.reply(
+      `✅ Broadcast complete!\n\n` +
+      `• Delivered: ${count}\n` +
+      `• Failed: ${failed}`
+    );
   }
 
   return next();
@@ -315,8 +406,13 @@ bot.on(["photo", "text"], async (ctx, next) => {
 
 /* ================= LAUNCH ================= */
 
-bot.launch();
-console.log("🚀 NexxTrade bot is live");
+initDB().then(() => {
+  bot.launch();
+  console.log("🚀 NexxTrade bot is live");
+}).catch(err => {
+  console.error("❌ Failed to initialise database:", err);
+  process.exit(1);
+});
 
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
