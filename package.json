@@ -1,22 +1,23 @@
 {
   "name": "nexxchat",
   "version": "1.0.0",
-  "description": "",
+  "description": "NexxTrade Telegram Bot",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "telegram",
+    "bot",
+    "trading",
+    "nexxtrade"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "dotenv": "^17.2.3",
-<<<<<<< HEAD
-    "pg": "^8.20.0",
+    "dotenv": "^16.4.5",
+    "pg": "^8.11.3",
     "telegraf": "^4.16.3"
-=======
-    "telegraf": "^4.16.3",
-    "pg": "^8.11.0"
->>>>>>> 0c7da2882e90b5c44d7027049d582c7cc997b0c6
   }
 }
