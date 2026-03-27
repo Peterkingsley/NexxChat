@@ -11,7 +11,12 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^17.2.3",
+<<<<<<< HEAD
     "pg": "^8.20.0",
     "telegraf": "^4.16.3"
+=======
+    "telegraf": "^4.16.3",
+    "pg": "^8.11.0"
+>>>>>>> 0c7da2882e90b5c44d7027049d582c7cc997b0c6
   }
 }
