@@ -88,16 +88,6 @@ bot.start(async (ctx) => {
 
   await ctx.reply(
     `Hey ${name}, welcome to NexxTrade 👋\n\n` +
-<<<<<<< HEAD
-    `You are about to gain access to the best crypto signal network.\n\n` +
-    `We help traders to:\n` +
-    `• Catch high-probability setups\n` +
-    `• Size positions correctly\n` +
-    `• Trade with structure\n` +
-    `• Access 2–3 quality signals daily\n` +
-    `• Join live trading sessions & Q&As\n\n` +
-    `To access our signals, click /continue to complete the short steps.`
-=======
     `You Are About to Gain Access to The Best Crypto Research & Signal Network.\n\n` +
     `We Help Traders to:\n` +
     `📊 Catch High-probability Set-ups\n` +
@@ -105,11 +95,10 @@ bot.start(async (ctx) => {
     `📈 Trade with structure\n` +
     `💰 Access 2–3 quality signals daily\n` +
     `📚 Join live trading sessions & Q&As\n\n` +
-    `To access our signals, click below to complete the short steps.`,
+    `To access our signals, click below to complete the short steps👇.`,
     Markup.inlineKeyboard([
       [Markup.button.callback("▶️ Continue", "CONTINUE")]
     ])
->>>>>>> 0c7da2882e90b5c44d7027049d582c7cc997b0c6
   );
 });
 
@@ -128,19 +117,11 @@ bot.action("CONTINUE", async (ctx) => {
 
 async function sendContinue(ctx) {
   await ctx.reply(
-<<<<<<< HEAD
-    `How To Get Free Signals 👇\n\n` +
-    `1️⃣ Register on XT Exchange\n` +
-    `2️⃣ Submit your UID\n` +
-    `3️⃣ Follow us on X (Twitter)\n` +
-    `4️⃣ Join our Telegram community`,
-=======
     `How To Get Our Signals 👇\n\n` +
     `Step 1️⃣ Register on XT Exchange\n` +
     `Step 2️⃣ Submit your UID\n` +
     `Step 3️⃣ Follow Nexxtrade on X (Twitter)\n` +
     `Step 4️⃣ Join our Trading community`,
->>>>>>> 0c7da2882e90b5c44d7027049d582c7cc997b0c6
     Markup.inlineKeyboard([
       [Markup.button.callback("🔗 Register on XT", "WHY_XT")]
     ])
@@ -167,7 +148,7 @@ bot.action("WHY_XT", async (ctx) => {
       parse_mode: "HTML",
       ...Markup.inlineKeyboard([
         [Markup.button.url("🔗 Register on XT", XT_LINK)],
-        [Markup.button.callback("✅ I've Registered", "REGISTERED")]
+        [Markup.button.callback("✅ Proceed", "REGISTERED")]
       ])
     }
   );
@@ -232,9 +213,9 @@ bot.action("JOINED", async (ctx) => {
 
     if (isValid) {
       await ctx.reply(
-        `✅ Membership verified! You're now part of the NexxTrade ecosystem.`,
+        `✅ Congratulation, you are now on your way to being a part of NexxTrade trading ecosystem.`,
         Markup.inlineKeyboard([
-          [Markup.button.callback("📊 View Performance", "PERFORMANCE")],
+          [Markup.button.callback("📊 View Past Performance", "PERFORMANCE")],
           [Markup.button.callback("Subscribe to Our Signals 📊", "SUBSCRIBE")]
         ])
       );
@@ -272,7 +253,7 @@ async function sendPerformance(ctx) {
     `• Take profits\n` +
     `• Stop losses\n` +
     `• Win/Loss history\n\n` +
-    `Click below to view verified results.`,
+    `Click below to view verified results. 👇 `,
     Markup.inlineKeyboard([
       [Markup.button.url("📈 View Performance Dashboard", PERFORMANCE_LINK)],
       [Markup.button.callback("Subscribe to Our Signals 📊", "SUBSCRIBE")]
@@ -293,17 +274,11 @@ bot.action("SUBSCRIBE", async (ctx) => {
 
 async function showPlans(ctx) {
   await ctx.reply(
-    `Choose your NexxTrade signal plan 👇`,
+    `Choose your preferred plan 👇`,
     Markup.inlineKeyboard([
-<<<<<<< HEAD
-      [Markup.button.callback("🟢 Monthly Plan", "PLAN_MONTHLY")],
-      [Markup.button.callback("🔵 Quarterly Plan", "PLAN_QUARTERLY")],
-      [Markup.button.callback("🟣 6-Month Elite Plan", "PLAN_ELITE")]
-=======
       [Markup.button.callback("🟡 Monthly Access  ||  Basic", "PLAN_MONTHLY")],
       [Markup.button.callback("🟢 3 Month Access  ||  Pro", "PLAN_QUARTERLY")],
       [Markup.button.callback("🔵 6 Month Access  ||  Elite", "PLAN_ELITE")]
->>>>>>> 0c7da2882e90b5c44d7027049d582c7cc997b0c6
     ])
   );
 }
