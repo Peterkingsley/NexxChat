@@ -4,7 +4,7 @@ require('dotenv').config();
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const ADMIN_IDS = [1388617888];
 
-const XT_LINK = "https://www.xtfarsi.site/en/activity/andy1117?ref=1GRPPT";
+const XT_LINK = "https://www.xtfarsi.site/pro/en/accounts/register?ref=1GRPPT";
 const COMMUNITY_LINK = "https://t.me/Nexxtrade_io";
 const COMMUNITY_USERNAME = "@Nexxtrade_io";
 const PERFORMANCE_LINK = "https://www.nexxtrade.io/performance";
@@ -17,8 +17,7 @@ const bot = new Telegraf(BOT_TOKEN);
 const users = new Set();
 const awaitingUid = new Set();
 const userUids = new Map();
-const userPlans = new Map(); // Tracks selected plan per user
-const adminBroadcasting = new Set();
+const adminBroadcasting = new Set(); // Tracks admins in broadcast mode
 
 /* ================= START ================= */
 
@@ -28,59 +27,26 @@ bot.start(async (ctx) => {
 
   await ctx.reply(
     `Hey ${name}, welcome to NexxTrade 👋\n\n` +
-    `You Are About to Gain Access to The Best Crypto Research & Signal Network.\n\n` +
-    `We Help Traders to:\n` +
-    `📊 Catch High-probability Set-ups\n` +
-    `🧠 Size positions correctly\n` +
-    `📈 Trade with structure\n` +
-    `💰 Access 2–3 quality signals daily\n` +
-    `📚 Join live trading sessions & Q&As\n\n` +
-    `To access our signals, click below to complete the short steps.`,
-    Markup.inlineKeyboard([
-      [Markup.button.callback("▶️ Continue", "CONTINUE")]
-    ])
+    `You are about to gain access to the best crypto signal network.\n\n` +
+    `We help traders to:\n` +
+    `• Catch high-probability setups\n` +
+    `• Size positions correctly\n` +
+    `• Trade with structure\n` +
+    `• Access 2–3 quality signals daily\n` +
+    `• Join live trading sessions & Q&As\n\n` +
+    `To access our signals, click /continue to complete the short steps.`
   );
 });
 
 /* ================= CONTINUE ================= */
 
 bot.command("continue", async (ctx) => {
-  await sendContinue(ctx);
-});
-
-bot.action("CONTINUE", async (ctx) => {
-  await ctx.answerCbQuery();
-  await sendContinue(ctx);
-});
-
-async function sendContinue(ctx) {
   await ctx.reply(
-    `How To Get Our Signals 👇\n\n` +
-    `Step 1️⃣ Register on XT Exchange\n` +
-    `Step 2️⃣ Submit your UID\n` +
-    `Step 3️⃣ Follow Nexxtrade on X (Twitter)\n` +
-    `Step 4️⃣ Join our Trading community`,
-    Markup.inlineKeyboard([
-      [Markup.button.callback("🔗 Register on XT", "WHY_XT")]
-    ])
-  );
-}
-
-/* ================= WHY XT (triggered by Register on XT button) ================= */
-
-bot.action("WHY_XT", async (ctx) => {
-  await ctx.answerCbQuery();
-
-  await ctx.reply(
-    `Why XT? 🏦\n\n` +
-    `• XT puts its users first\n` +
-    `• No failed Limit orders\n` +
-    `• No failed SLs\n` +
-    `• No failed TPs\n` +
-    `• Deep liquidity\n` +
-    `• Fast execution\n` +
-    `• Wide futures pairs\n` +
-    `• Proper Risk management tools`,
+    `How To Get Free Signals 👇\n\n` +
+    `1️⃣ Register on XT Exchange\n` +
+    `2️⃣ Submit your UID\n` +
+    `3️⃣ Follow us on X (Twitter)\n` +
+    `4️⃣ Join our Telegram community`,
     Markup.inlineKeyboard([
       [Markup.button.url("🔗 Register on XT", XT_LINK)],
       [Markup.button.callback("✅ I've Registered", "REGISTERED")]
@@ -106,15 +72,12 @@ bot.action("FOLLOW_X", async (ctx) => {
   await ctx.answerCbQuery();
 
   await ctx.reply(
-    `3️⃣ Follow <a href="${X_LINK}">Nexxtrade on X</a> to stay updated with market insights, trade ideas & announcements.\n\n` +
+    `3️⃣ Follow us on X (Twitter) to stay updated with market insights, trade ideas & announcements.\n\n` +
     `👇 Click below to follow, then confirm.`,
-    {
-      parse_mode: "HTML",
-      ...Markup.inlineKeyboard([
-        [Markup.button.url("🐦 Follow @NexxTrade_io on X", X_LINK)],
-        [Markup.button.callback("✅ I've Followed", "FOLLOWED_X")]
-      ])
-    }
+    Markup.inlineKeyboard([
+      [Markup.button.url("🐦 Follow @NexxTrade_io on X", X_LINK)],
+      [Markup.button.callback("✅ I've Followed", "FOLLOWED_X")]
+    ])
   );
 });
 
@@ -123,7 +86,7 @@ bot.action("FOLLOWED_X", async (ctx) => {
 
   await ctx.reply(
     `🙌 Thanks for following us on X!\n\n` +
-    `Last Step: Join our Telegram to get access to live market updates and Alerts 🚨`,
+    `Last step: join our Telegram community to get access to live signals.`,
     Markup.inlineKeyboard([
       [Markup.button.url("🚀 Join NexxTrade Community", COMMUNITY_LINK)],
       [Markup.button.callback("✅ I've Joined", "JOINED")]
@@ -150,7 +113,7 @@ bot.action("JOINED", async (ctx) => {
         `✅ Membership verified! You're now part of the NexxTrade ecosystem.`,
         Markup.inlineKeyboard([
           [Markup.button.callback("📊 View Performance", "PERFORMANCE")],
-          [Markup.button.callback("Subscribe to Our Signals 📊", "SUBSCRIBE")]
+          [Markup.button.callback("💳 Subscribe to Signals", "SUBSCRIBE")]
         ])
       );
     } else {
@@ -189,13 +152,12 @@ async function sendPerformance(ctx) {
     `• Win/Loss history\n\n` +
     `Click below to view verified results.`,
     Markup.inlineKeyboard([
-      [Markup.button.url("📈 View Performance Dashboard", PERFORMANCE_LINK)],
-      [Markup.button.callback("Subscribe to Our Signals 📊", "SUBSCRIBE")]
+      [Markup.button.url("📈 View Performance Dashboard", PERFORMANCE_LINK)]
     ])
   );
 }
 
-/* ================= SUBSCRIBE / PLAN SELECTION ================= */
+/* ================= SUBSCRIBE ================= */
 
 bot.command("subscribe", async (ctx) => {
   await showPlans(ctx);
@@ -208,55 +170,26 @@ bot.action("SUBSCRIBE", async (ctx) => {
 
 async function showPlans(ctx) {
   await ctx.reply(
-    `Choose your NexxTrade signal plan 👇`,
+    `NexxTrade offers multiple signal plans depending on your trading style.`,
     Markup.inlineKeyboard([
-      [Markup.button.callback("🟡 Monthly Access  ||  Basic", "PLAN_MONTHLY")],
-      [Markup.button.callback("🟢 3 Month Access  ||  Pro", "PLAN_QUARTERLY")],
-      [Markup.button.callback("🔵 6 Month Access  ||  Elite", "PLAN_ELITE")]
+      [Markup.button.callback("🟢 Monthly Plan", "PLAN_MONTHLY")],
+      [Markup.button.callback("🔵 Quarterly Plan", "PLAN_QUARTERLY")],
+      [Markup.button.callback("🟣 6-Month Elite Plan", "PLAN_ELITE")]
     ])
   );
 }
 
-/* ================= PLAN CONFIRMATION (Bot Switch Message) ================= */
-
-bot.action(/^PLAN_(MONTHLY|QUARTERLY|ELITE)$/, async (ctx) => {
+bot.action(/PLAN_/, async (ctx) => {
   await ctx.answerCbQuery();
-  const planKey = ctx.callbackQuery.data.replace("PLAN_", "");
-  const userId = ctx.from.id;
-  const username = ctx.from.username ? `@${ctx.from.username}` : ctx.from.first_name;
+  const plan = ctx.callbackQuery.data.replace("PLAN_", "");
+  const planName = plan.toLowerCase();
 
-  const planLabels = {
-    MONTHLY: "Monthly Access || Basic",
-    QUARTERLY: "3 Month Access || Pro",
-    ELITE: "6 Month Access || Elite"
-  };
-
-  const planName = planLabels[planKey] || planKey;
-  userPlans.set(userId, planKey.toLowerCase());
-
-  // Step 1: Long welcome/pitch message
   await ctx.reply(
-    `Hey ${ctx.from.first_name}, welcome to NexxTrade 👋\n\n` +
-    `You Are About to Gain Access to The Best Crypto Research & Signal Network.\n\n` +
-    `We Help Traders to:\n` +
-    `📊 Catch High-probability Set-ups\n` +
-    `🧠 Size positions correctly\n` +
-    `📈 Trade with structure\n` +
-    `💰 Access 2–3 quality signals daily\n` +
-    `📚 Join live trading sessions & Q&As`
-  );
-
-  // Step 2: Short personalised confirmation message
-  await ctx.reply(
-    `Welcome ${username}! You're about to secure access to NexxTrade ${planName} Circle\n\n` +
-    `Just a few clicks left\n` +
-    `📊 Get 2-3 signals daily\n` +
-    `🔬 Expert Analysis\n` +
-    `📈 High-probability setups only\n\n` +
-    `Confirm your plan to proceed 👇`,
+    `⭐ ${plan} Signal Plan\n\n` +
+    `To complete your subscription and secure your spot, please proceed to our specialized payment bot.`,
     Markup.inlineKeyboard([
-      [Markup.button.url("✅ Confirm Your Plan", `https://t.me/${PAYMENT_BOT_USERNAME}?start=pay_${planKey.toLowerCase()}`)],
-      [Markup.button.callback("📊 View Performance", "PERFORMANCE")]
+      [Markup.button.url("💳 Pay Now", `https://t.me/${PAYMENT_BOT_USERNAME}?start=pay_${planName}`)],
+      [Markup.button.callback("🔙 Back to Plans", "SUBSCRIBE")]
     ])
   );
 });
@@ -267,18 +200,18 @@ bot.command("support", async (ctx) => {
   await ctx.reply("Need help?\n\nContact support: @NexxTradeSupport");
 });
 
-/* ================= BROADCAST (ADMIN) ================= */
+/* ================= ENHANCED BROADCAST (ADMIN) ================= */
 
 bot.command("mass", async (ctx) => {
   if (!ADMIN_IDS.includes(ctx.from.id)) return;
 
   adminBroadcasting.add(ctx.from.id);
   await ctx.reply(
-    "📢 <b>Broadcast Mode Active</b>\n\n" +
-    "Send me a <b>Photo (with caption)</b> or a <b>Text Message</b> to broadcast to all users.\n\n" +
-    "• You can use HTML for links: &lt;a href='https://example.com'&gt;Text&lt;/a&gt;\n" +
+    "📢 **Broadcast Mode Active**\n\n" +
+    "Send me a **Photo (with caption)** or a **Text Message** to broadcast to all users.\n\n" +
+    "• You can use HTML for links: <a href='https://example.com'>Text</a>\n" +
     "• Type /cancel to exit mode.",
-    { parse_mode: "HTML" }
+    { parse_mode: "Markdown" }
   );
 });
 
