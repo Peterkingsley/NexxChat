@@ -40,9 +40,16 @@ async function initDB() {
       is_premium    BOOLEAN DEFAULT FALSE,
       xt_uid        TEXT,
       joined_at     TIMESTAMPTZ DEFAULT NOW(),
-      last_seen     TIMESTAMPTZ DEFAULT NOW()
+      last_seen     TIMESTAMPTZ DEFAULT NOW(),
+      onboarding_step TEXT DEFAULT 'STARTED',
+      onboarding_completed BOOLEAN DEFAULT FALSE,
+      last_follow_up_sent INTEGER DEFAULT 0
     )
   `);
+  // Add missing columns if they don't exist
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_step TEXT DEFAULT 'STARTED'`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_follow_up_sent INTEGER DEFAULT 0`);
   console.log("✅ Database table ready");
 }
 
@@ -74,6 +81,13 @@ async function saveUser(from, chatId) {
 }
 
 // Fetch all chat_ids from DB for broadcasting
+async function updateUserStep(userId, step, completed = false) {
+  await pool.query(
+    "UPDATE users SET onboarding_step = $1, onboarding_completed = $2 WHERE user_id = $3",
+    [step, completed, userId]
+  );
+}
+
 async function getAllChatIds() {
   const result = await pool.query("SELECT chat_id FROM users");
   return result.rows.map(r => r.chat_id);
@@ -85,7 +99,7 @@ bot.start(async (ctx) => {
   const name = ctx.from.first_name;
 
   await saveUser(ctx.from, ctx.chat.id);
-
+  await updateUserStep(ctx.from.id, "STEP_1_XT_REG");
   await ctx.reply(
     `Hey ${name}, welcome to NexxTrade 👋\n\n` +
     `You Are About to Gain Access to The Best Crypto Research & Signal Network.\n\n` +
@@ -106,12 +120,14 @@ bot.start(async (ctx) => {
 
 bot.command("continue", async (ctx) => {
   await saveUser(ctx.from, ctx.chat.id);
+  await updateUserStep(ctx.from.id, "STEP_1_XT_REG");
   await sendContinue(ctx);
 });
 
 bot.action("CONTINUE", async (ctx) => {
   await ctx.answerCbQuery();
   await saveUser(ctx.from, ctx.chat.id);
+  await updateUserStep(ctx.from.id, "STEP_1_XT_REG");
   await sendContinue(ctx);
 });
 
@@ -159,6 +175,7 @@ bot.action("WHY_XT", async (ctx) => {
 bot.action("REGISTERED", async (ctx) => {
   await ctx.answerCbQuery();
   awaitingUid.add(ctx.from.id);
+  await updateUserStep(ctx.from.id, "STEP_2_UID");
 
   await ctx.reply(
     `✅ Great! Now, please type and send your XT UID.\n\n` +
@@ -185,6 +202,7 @@ bot.action("FOLLOW_X", async (ctx) => {
 });
 
 bot.action("FOLLOWED_X", async (ctx) => {
+  await updateUserStep(ctx.from.id, "STEP_4_JOIN");
   await ctx.answerCbQuery();
 
   await ctx.reply(
@@ -212,6 +230,7 @@ bot.action("JOINED", async (ctx) => {
     const isValid = ["member", "administrator", "creator"].includes(member.status);
 
     if (isValid) {
+      await updateUserStep(userId, "COMPLETED", true);
       await ctx.reply(
         `✅ Congratulation, you are now on your way to being a part of NexxTrade trading ecosystem.`,
         Markup.inlineKeyboard([
@@ -354,7 +373,7 @@ bot.on(["photo", "text"], async (ctx, next) => {
 
     // Persist XT UID to PostgreSQL
     await pool.query(
-      "UPDATE users SET xt_uid = $1 WHERE user_id = $2",
+      "UPDATE users SET xt_uid = $1, onboarding_step = 'STEP_3_FOLLOW' WHERE user_id = $2",
       [uidInput, userId]
     );
 
@@ -407,6 +426,164 @@ bot.on(["photo", "text"], async (ctx, next) => {
 
   return next();
 });
+
+
+/* ================= FOLLOW-UPS ================= */
+
+
+
+async function sendResumeOnboarding(chatId, userId, step) {
+  let text = "";
+  let buttons = [];
+
+  switch (step) {
+    case 'STARTED':
+    case 'STEP_1_XT_REG':
+      text = `<b>Step 1️⃣ Register on XT Exchange</b>
+
+Register here: <a href="${XT_LINK}">${XT_LINK}</a>
+
+Once registered, click below to proceed.`;
+      buttons = [
+        [Markup.button.url("🔗 Register on XT", XT_LINK)],
+        [Markup.button.callback("✅ Proceed", "REGISTERED")]
+      ];
+      break;
+    case 'STEP_2_UID':
+      awaitingUid.add(userId);
+      text = `✅ <b>Step 2️⃣ Submit UID</b>
+
+Please type and send your numeric XT UID.
+
+You can find this in your XT Account Profile settings.`;
+      break;
+    case 'STEP_3_FOLLOW':
+      text = `<b>Step 3️⃣ Follow on X</b>
+
+Follow <a href="${X_LINK}">Nexxtrade on X</a> to stay updated with market insights.
+
+👇 Click below to follow, then confirm.`;
+      buttons = [
+        [Markup.button.url("🐦 Follow @NexxTrade_io on X", X_LINK)],
+        [Markup.button.callback("✅ I've Followed", "FOLLOWED_X")]
+      ];
+      break;
+    case 'STEP_4_JOIN':
+      text = `<b>Step 4️⃣ Join Community</b>
+
+Join our Telegram to get access to live market updates and Alerts 🚨`;
+      buttons = [
+        [Markup.button.url("🚀 Join NexxTrade Community", COMMUNITY_LINK)],
+        [Markup.button.callback("✅ I've Joined", "JOINED")]
+      ];
+      break;
+    default:
+      text = "Looks like you have some steps left. Click below to continue.";
+      buttons = [[Markup.button.callback("▶️ Continue Onboarding", "CONTINUE")]];
+  }
+
+  await bot.telegram.sendMessage(chatId, text, {
+    parse_mode: "HTML",
+    ...Markup.inlineKeyboard(buttons)
+  });
+}
+
+
+
+bot.action("RESUME_ONBOARDING", async (ctx) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from.id;
+  const result = await pool.query("SELECT onboarding_step FROM users WHERE user_id = $1", [userId]);
+  if (result.rows.length > 0) {
+    await sendResumeOnboarding(ctx.chat.id, userId, result.rows[0].onboarding_step);
+  } else {
+    await ctx.reply("Please start the bot first using /start");
+  }
+});
+
+async function checkFollowUps() {
+  try {
+    const result = await pool.query(
+      "SELECT user_id, chat_id, first_name, onboarding_step, last_follow_up_sent, joined_at FROM users WHERE onboarding_completed = false"
+    );
+
+    const now = new Date();
+    for (const user of result.rows) {
+      const minutesSinceJoined = Math.floor((now - new Date(user.joined_at)) / 60000);
+      let nextFollowUp = 0;
+      let message = "";
+      let buttons = [];
+
+      if (minutesSinceJoined >= 15 && user.last_follow_up_sent < 3) {
+        nextFollowUp = 3;
+        message = `Last call ⚠️
+
+Access to NexxTrade is only unlocked after completing the short steps
+No shortcuts.
+
+We do this to keep the community serious, structured, and high quality.
+
+If you’re ready to trade with:
+• Clear signals
+• Structured entries & exits
+• Real market insights
+
+Then finish the simple steps below
+
+Simple signals. Clear instructions. Real results.
+
+Click here to proceed and gain access👇`;
+        buttons = [[Markup.button.callback("👉 Proceed", "RESUME_ONBOARDING")]];
+      } else if (minutesSinceJoined >= 10 && user.last_follow_up_sent < 2) {
+        nextFollowUp = 2;
+        message = `${user.first_name} have you gotten access yet?
+
+While you’re waiting, others are already getting early signals and positioning ahead of the market.
+This is exactly how people miss opportunities.
+
+NexxTrade isn’t just a group — it’s where serious traders get their edge.
+
+Finish your onboarding now:
+✔️ Register
+✔️ Submit UID
+✔️ Follow
+✔️ Join the free channel
+
+Don’t watch from the outside while others profit.
+
+Click here to proceed👇`;
+        buttons = [[Markup.button.callback("👉 Proceed", "RESUME_ONBOARDING")]];
+      } else if (minutesSinceJoined >= 5 && user.last_follow_up_sent < 1) {
+        nextFollowUp = 1;
+        message = `${user.first_name}👋
+
+Looks like you didn’t complete your NexxTrade onboarding yet…
+Quick reminder — you’re just 4 simple steps away from getting access to our trading signals:
+Most people stop halfway and miss out… don’t be that person.
+Takes less than 2 minutes to finish.
+
+👉 Complete your onboarding now and unlock access.
+
+1️⃣ Register on XT Exchange Now to gain access: ${XT_LINK}`;
+        buttons = [[Markup.button.callback("▶️ Continue", "CONTINUE")]];
+      }
+
+      if (nextFollowUp > 0) {
+        try {
+          await bot.telegram.sendMessage(user.chat_id, message, Markup.inlineKeyboard(buttons));
+          await pool.query("UPDATE users SET last_follow_up_sent = $1 WHERE user_id = $2", [nextFollowUp, user.user_id]);
+        } catch (err) {
+          console.error(`Failed to send follow-up to ${user.user_id}:`, err.message);
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Error in checkFollowUps:", err);
+  }
+}
+
+// Run every minute
+setInterval(checkFollowUps, 60000);
 
 /* ================= LAUNCH ================= */
 
